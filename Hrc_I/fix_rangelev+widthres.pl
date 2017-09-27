@@ -21,6 +21,8 @@ $obsfile=$ARGV[0];  #for other sources
 
 print "$obsfile\n";
 
+$obsfile = "$outdir"."$obsfile";
+
 open(OBS, $obsfile);
 while (<OBS>){
     @tmp=split;

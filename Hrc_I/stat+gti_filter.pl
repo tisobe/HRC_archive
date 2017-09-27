@@ -11,7 +11,7 @@
 #
 # JPB, 9 Feb 2007
 #
-#   t. isobe Mar 09, 2017
+#   t. isobe Sep 27, 2017
 #
 ###############################################################
 
@@ -20,6 +20,8 @@ $outdir = '/data/hrc/i/';
 $obsfile=$ARGV[0];
 
 print "$obsfile\n";
+
+$obsfile = "$outdir"."$obsfile";
 
 open(OBS, $obsfile);
 while (<OBS>){
@@ -34,7 +36,10 @@ while (<OBS>){
     $evt1="$outdir${obsid}/secondary/hrcf${obsid}_evt1_new.fits";
     $stflt="$outdir${obsid}/secondary/hrcf${obsid}_evt1_new_stflt.fits";
     $outfile="$outdir${obsid}/analysis/hrcf${obsid}_evt2.fits";
-    print `punlearn dmcopy`;
+    
+    print `rm -rf param; mkdir param`;
+    print `source /home/mta/bin/reset_param`;
+
     print `dmcopy \"${evt1}[status=xxxxxx00xxxx0xxx00000000x0000000]\" ${stflt} verbose=3 clobber=yes`;
     print `dmcopy \"${stflt}[EVENTS][\@${gti}]\" ${outfile} verbose=3 clobber=yes`;
 }

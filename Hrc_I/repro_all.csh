@@ -52,7 +52,7 @@ foreach obsid ( `cat $obslst | grep -v ^\#` )
         touch $obsid/analysis/.fix_dtcor
       endif
 
-      chgrp -R mta /data/hrc/i/$obsid
+      chgrp -R hat /data/hrc/i/$obsid
       chmod -R a+r,g+w /data/hrc/i/$obsid
       find /data/hrc/i/$obsid -type d -exec chmod og+rx {} \;
     endif

@@ -1,14 +1,14 @@
 #!/usr/bin/env /proj/sot/ska/bin/python
 
-#############################################################################################################
-#                                                                                                           #
-#           re_process_hrc_data.py: a control script to run reprocess csh scripts: HRC I Version            #
-#                                                                                                           #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                       #
-#                                                                                                           #
-#           Last Update: Mar 09, 2017                                                                       #
-#                                                                                                           #
-#############################################################################################################
+#########################################################################################################
+#                                                                                                       #
+#           re_process_hrc_data.py: a control script to run reprocess csh scripts: HRC I Version        #
+#                                                                                                       #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                                                   #
+#                                                                                                       #
+#           Last Update: Sep 27, 2017                                                                   #
+#                                                                                                       #
+#########################################################################################################
 
 import sys
 import os
@@ -25,8 +25,9 @@ from datetime import datetime
 #
 from Ska.Shell import getenv, bash
 
-ascdsenv = getenv('source /home/ascds/.ascrc -r release; source /home/mta/bin/reset_param ', shell='tcsh')
-ciaoenv  = getenv('source /soft/ciao/bin/ciao.sh')
+#ascdsenv = getenv('source /home/ascds/.ascrc -r release; source /home/mta/bin/reset_param ', shell='tcsh')
+ciaoenv  = getenv('source /soft/ciao/bin/ciao.csh; source /home/mta/bin/reset_param; setenv PFILES "${PDIRS}"; set path=(/soft/ciao/bin/ $path);', shell='tcsh')
+#ciaoenv  = getenv('source /soft/ciao/bin/ciao.csh', shell='tcsh')
 
 #
 #--- reading directory list
@@ -45,11 +46,8 @@ for ent in data:
 #
 #--- append path to a private folders
 #
-sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 
-import mta_common_functions     as mcf
-import convertTimeFormat        as tcnv
 import OcatSQL                  as sql
 from   OcatSQL                  import OcatDB
 
@@ -96,7 +94,7 @@ def run_process():
 #    run_ciao(cmd)
 
     for obsid in hrc_i:
-        cmd = 'chgrp -R hat ' +  data_dir + '/' + obsid
+        cmd = 'chgrp -R hat ' +  data_dir + '/' + str(obsid)
         os.system(cmd)
 
 
@@ -117,6 +115,8 @@ def find_un_processed_data():
     data   = read_data(infile)
     hrc_i  = []
     hrc_s  = []
+    dict_i = {}
+    dict_s = {}
     for ent in data:
         atemp = re.split('\^', ent)
         mc1 = re.search('HRC-I', atemp[12])
@@ -129,6 +129,7 @@ def find_un_processed_data():
             except:
                 continue
             hrc_i.append(val)
+            dict_i[val] = check_status(ent)
 
         elif mc2 is not None:
             atemp = re.split('\^\s+', ent)
@@ -138,14 +139,30 @@ def find_un_processed_data():
             except:
                 continue
             hrc_s.append(val)
+            dict_s[val] = check_status(ent)
 
         else:
             continue
 
-    uhrc_i = clean_the_list(hrc_i, 'i')
-    uhrc_s = clean_the_list(hrc_s, 's')
+    uhrc_i = clean_the_list(hrc_i, dict_i, 'i')
+    uhrc_s = clean_the_list(hrc_s, dict_s, 's')
     
     return [uhrc_i, uhrc_s]
+
+#-----------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
+
+def check_status(line):
+
+    mc1 = re.search('archived', line)
+    mc2 = re.search('observed', line)
+    if mc1 is not None:
+        return 'archived'
+    elif mc2 is not None:
+        return 'observed'
+    else:
+        return 'bad'
 
 #-----------------------------------------------------------------------------------------
 #-- find_processed_data: find the hrc obsids which are already re-processed             --
@@ -168,7 +185,7 @@ def find_processed_data(inst):
             val   = int(float(atemp[-1]))
         except:
             continue
-        if mcf.chkNumeric(val):
+        if chkNumeric(val):
             out.append(val)
 #
 #--- remove duplicate
@@ -182,7 +199,7 @@ def find_processed_data(inst):
 #-----------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------
 
-def clean_the_list(current, inst):
+def clean_the_list(current, cdict, inst):
     """
     select out obsids which need re-process
     input:  current --- a list of all hrc obsid found in database
@@ -194,7 +211,7 @@ def clean_the_list(current, inst):
 #--- read the past cancelled obsids
 #
     rfile  = house_keeping + 'cancelled_list'
-    remove = set(read_data(rfile))
+    remove = set(read_data(rfile, num =1))
 #
 #--- find obsids already re-processed
 #
@@ -207,7 +224,12 @@ def clean_the_list(current, inst):
     good = []
     bad  = []
     for obsid in uhrc:
-        status = find_status(obsid)
+        #status = find_status(obsid)
+        try:
+            status = cdict[int(obsid)]
+        except:
+            status = 'bad'
+
         if status == 'archived':
             good.append(obsid)
         elif status == 'observed':
@@ -217,9 +239,13 @@ def clean_the_list(current, inst):
 #
 #--- update cancelled_list if there are new cancelled observations
 #
-    if len(bad) > 0:
+    sbad = set(bad)
+    nbad = (set(bad) - remove)
+
+    if len(nbad) > 0:
+        ncancel = list(remove) + list(nbad)
         fo = open(rfile, 'a')
-        for ent in  bad:
+        for ent in  ncancel:
             fo.write(str(ent))
             fo.write('\n')
 
@@ -245,19 +271,86 @@ def find_status(obsid):
         return ""
 
 #-----------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
+
+def chkNumeric(elm):
+
+    """
+    check the entry is numeric. If so return True, else False.
+    """
+    
+    try:
+        test = float(elm)
+    except:
+        return False
+    else:
+        return True
+
+
+#-----------------------------------------------------------------------------------------
 #-- read_data: read data file                                                           --
 #-----------------------------------------------------------------------------------------
 
-def read_data(infile, remove=0):
+def read_data(infile, remove=0, num = 0):
 
     f    = open(infile, 'r')
     data = [line.strip() for line in f.readlines()]
     f.close()
 
+    if num == 1:
+        temp = []
+        for ent in data:
+            temp.append(int(float(ent)))
+        data = temp
+    
     if remove == 1:
-        mcf.rm_file(infile)
+        rm_file(infile)
 
     return data
+
+#-----------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------
+
+def rm_file(file):
+    """
+    remove file
+    Input:  file --- a name of file to be removed
+    Output: none
+    """
+    chk = chkFile(file)
+    if chk > 0:
+        cmd = 'rm -rf ' + file
+        os.system(cmd)
+
+#------------------------------------------------------------------------------------------
+#-- chkFile: check whether a file/directory exits in the directory given                ---
+#------------------------------------------------------------------------------------------
+
+def chkFile(inline, name = 'NA'):
+
+    """
+    check whether a file/directory exits in the directory given, 
+    Input: a file/directory name with a full path   or a directory path and a file/directory name
+    """
+#
+#--- if the second element is not given, assume that the first element contains 
+#--- a full path and file/directory name
+#
+    if name == 'NA':
+        cmd =  inline
+    else:
+        cmd = inline + '/' + name
+    
+    chk  = os.path.isfile(cmd)
+    chk2 = os.path.isdir(cmd)
+
+    if (chk == True) or (chk2 == True):
+        return 1
+    else:
+        return 0
+
 
 #-----------------------------------------------------------------------------------------
 #-- run_ciao: running ciao comannds                                                    ---

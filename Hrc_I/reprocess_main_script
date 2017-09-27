@@ -1,4 +1,7 @@
 
+rm -rf param 
+mkdir param
+
 cd /data/aschrc6/wilton/isobe/Project9/Exc/
 
 source /proj/sot/ska/bin/ska_envs.csh

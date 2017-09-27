@@ -9,7 +9,7 @@
 #
 # JPB, 8 Feb 2007
 #
-#   t. isobe Mar 09, 2017
+#   t. isobe Sep 27, 2017
 #
 ###############################################################
 
@@ -18,6 +18,8 @@ $outdir = '/data/hrc/i/';
 $obsfile=$ARGV[0];
 
 print "$obsfile\n";
+
+$obsfile = "$outdir"."$obsfile";
 
 open(OBS, $obsfile);
 while (<OBS>){
@@ -28,11 +30,13 @@ while (<OBS>){
     $file=trim($blah);
 
     $dir="$outdir${obsid}/secondary/";
-#    print "$dir\n";
+    print "$dir\n";
 
     print "\n\n$obsid\t$file";
 
-    print `punlearn dmmakepar`;
+    print `rm -rf param; mkdir param`;
+    print `source /home/mta/bin/reset_param`;
+
     print `dmmakepar ${file} ${dir}hrcf${obsid}_obs.par clobber=yes mode=h verbose=3`;
    
     print `punlearn hrc_build_badpix`;

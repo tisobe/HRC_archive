@@ -11,7 +11,7 @@
 #
 # JPB, 9 Feb 2007
 #
-#   t. isobe Mar 09, 2017
+#   t. isobe Sep 27, 2017
 #
 ###############################################################
 
@@ -37,7 +37,9 @@ while (<OBS>){
     $stflt="$outdir${obsid}/secondary/hrcf${obsid}_evt1_new_stflt.fits";
     $outfile="$outdir${obsid}/analysis/hrcf${obsid}_evt2.fits";
 
-    print `punlearn dmcopy`;
+    print `rm -rf param; mkdir param`;
+    print `source /home/mta/bin/reset_param`;
+
     print `dmcopy \"${evt1}[status=xxxxxx00xxxx0xxx0000x000x00000xx]\" ${stflt} verbose=3 clobber=yes`;
     print `dmcopy \"${stflt}[EVENTS][\@${gti}]\" ${outfile} verbose=3 clobber=yes`;
 }

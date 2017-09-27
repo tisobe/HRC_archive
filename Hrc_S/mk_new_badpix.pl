@@ -9,7 +9,7 @@
 #
 # JPB, 23 June 2007
 #
-#   t. isobe Mar 09, 2017
+#   t. isobe Sep 27, 2017
 #
 ###############################################################
 
@@ -31,7 +31,9 @@ while (<OBS>){
 
     print "\n\n$obsid\t$file";
 
-    print `punlearn dmmakepar`;
+    print `rm -rf param; mkdir param`;
+    print `source /home/mta/bin/reset_param`;
+
     print `dmmakepar ${file} ${dir}hrcf${obsid}_obs.par clobber=yes mode=h verbose=3`;
    
     print `punlearn hrc_build_badpix`;

@@ -19,6 +19,8 @@ $obsfile=$ARGV[0];
 
 print "$obsfile\n";
 
+$obsfile = "$outdir"."$obsfile";
+
 open(OBS, $obsfile);
 while (<OBS>){
     @tmp=split;
