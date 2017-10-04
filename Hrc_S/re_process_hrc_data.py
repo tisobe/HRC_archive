@@ -6,7 +6,7 @@
 #                                                                                                           #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                                                       #
 #                                                                                                           #
-#           Last Update: Sep 27, 2017                                                                       #
+#           Last Update: Oct 04, 2017                                                                       #
 #                                                                                                           #
 #############################################################################################################
 
@@ -95,6 +95,8 @@ def run_process():
 
     for obsid in hrc_s:
         cmd = 'chgrp -R hat ' +  data_dir + '/' + str(obsid)
+        os.system(cmd)
+        cmd = 'chmod -R 774 ' +  data_dir + '/' + str(obsid)
         os.system(cmd)
 
 
